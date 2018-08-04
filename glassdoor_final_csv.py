@@ -7,13 +7,9 @@ import time
 import csv
 import re
 
-from helperP3 import init_glassdoor
 
-# driver = webdriver.Chrome(r'path\to\where\you\download\the\chromedriver.exe')
-driver = init_glassdoor()  
-#driver = webdriver.Chrome()
+driver = webdriver.Chrome()
 driver.get("https://www.glassdoor.com/Job/data-scientist-jobs-SRCH_KO0,14.htm")
-# Click review button to go to the review section
 
 
 csv_file = open('gd_reviews.csv', 'a')
@@ -25,7 +21,7 @@ jobs =  driver.find_elements_by_xpath('//*[@id="MainCol"]/div/ul//div[2]/div[1]/
 print(len(jobs))
 index = 0
 errorCount = 0
-for job in jobs: #debugging  [10:13]
+for job in jobs[1:4]: #debugging  [10:13]
 	index = index+1
 	print(' job #{num}'.format(num=index))
 	review_dict = {}
@@ -62,58 +58,10 @@ for job in jobs: #debugging  [10:13]
 	
 	
 		writer.writerow(review_dict.values())
-	except:
+	except Exception as e:
 		#pass
+		print(type(e),e)
 		errorCount +=1
 
 
 print(errorCount)
-
-#review_button.click()
-
-'''
-
-# Windows users need to open the file using 'wb'
-# csv_file = open('reviews.csv', 'wb')
-csv_file = open('reviews.csv', 'w')
-writer = csv.writer(csv_file)
-# Page index used to keep track of where we are.
-index = 1
-while index <=2:  ###while True:
-	try:
-		print("Scraping Page number " + str(index))
-		index = index + 1
-		# Find all the reviews on the page
-		wait_review = WebDriverWait(driver, 10)
-		reviews = wait_review.until(EC.presence_of_all_elements_located((By.XPATH,
-									'//div[@itemprop="review"]')))
-		for review in reviews:
-			# Initialize an empty dictionary for each review
-			review_dict = {}
-			# Use relative xpath to locate the title, text, username, date.
-			# Once you locate the element, you can use 'element.text' to return its string.
-			# To get the attribute instead of the text of each element, use 'element.get_attribute()'
-			title = review.find_element_by_xpath('.//div[@itemprop="headline"]').text
-			text = review.find_element_by_xpath('.//span[@itemprop="reviewBody"]').text
-			username = review.find_element_by_xpath('.//span[@itemprop="author"]').text
-			date_published = review.find_element_by_xpath('.//meta[@itemprop="datePublished"]').get_attribute('content')
-			rating = review.find_element_by_xpath('.//span[@itemprop="ratingValue"]').text
-
-			review_dict['title'] = title
-			review_dict['content'] = text
-			review_dict['username'] = username
-			review_dict['date_published'] = date_published
-			review_dict['rating'] = rating
-			writer.writerow(review_dict.values())
-
-		# Locate the next button on the page.
-		wait_button = WebDriverWait(driver, 10)
-		next_button = wait_button.until(EC.element_to_be_clickable((By.XPATH,
-									'//li[@class="nextClick displayInlineBlock padLeft5 "]')))
-		next_button.click()
-	except Exception as e:
-		print(e)
-		csv_file.close()
-		driver.close()
-		break
-'''
