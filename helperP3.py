@@ -1,6 +1,6 @@
 
 """
-Based on code created by Diego De Lazzari
+Inspired by code created by Diego De Lazzari
 Modified for Python 3 by Aungshuman Zaman
 
 """
@@ -12,10 +12,13 @@ from nltk.corpus import stopwords # Filter out stopwords, such as 'the', 'or', '
 import pandas as pd # For converting results to a dataframe and bar chart plots
 from selenium.webdriver.common import action_chains, keys
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import numpy as np
 import pickle
 import re
 import csv
+#from collections import OrderedDict
 
 def init_driver():
     ''' Initialize chrome driver'''
@@ -51,7 +54,7 @@ def get_pause():
 
 ###############################################################################
 #utility function to get csv file from pickle.
-def get_csv(pickle_obj):
+def get_csv(pickle_obj):  ####&&&&
     my_dict = load_obj(pickle_obj)
     csv_filename = 'mycsvfile.csv'
     with open(csv_filename, 'w') as f:  # Just use 'w' mode in 3.x
@@ -71,6 +74,35 @@ def get_csv(pickle_obj):
     
 
 ###############################################################################
+def get_csv2(pickle_obj): ####&&&&
+    my_dict = load_obj(pickle_obj)
+    csv_filename = 'mycsvfile2.csv'
+    with open(csv_filename, 'w') as f:  # Just use 'w' mode in 3.x
+        writer = csv.writer(f)
+        fieldnames = ['job_id','rating','position','company_name','salary','link',\
+        'description','hq_city','hq_state_code','size','industry']
+        #writer = csv.DictWriter(f, fieldnames=fieldnames)
+        #writer.writeheader()
+        for k,v in my_dict.items():
+            if len(v) == 10:
+                new_dict = {}
+                new_dict['job_id'] = k
+                new_dict['rating'] = v[0] 
+                new_dict['position'] = v[1]
+                new_dict['company_name'] = v[2]
+                new_dict['salary'] = v[3]
+                new_dict['link'] = v[4]
+                new_dict['description'] = v[5]
+                new_dict['hq_city'] = v[6]
+                new_dict['hq_state_code'] = v[7]
+                new_dict['size'] = v[8]
+                new_dict['industry'] = v[9]
+                
+                #writer.writerow(new_dict.values())
+                writer.writerow([new_dict[i] for i in fieldnames]) #order preserved
+
+##############################################################################
+
 
 def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
     '''Scrape for job listing'''
@@ -92,7 +124,6 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
         location.send_keys(city) #type in location name in search
         
         sleep(2)
-        #deal with pop-up
         browser.find_element_by_class_name('gd-btn-mkt').click()
         
         sleep(5)
@@ -104,7 +135,7 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
         # Find brief description
         
         
-        for i in range(25): #25
+        for i in range(2): #25
             try:
                 # Extract useful classes
                 jobPosting =browser.find_elements_by_class_name('jl')
@@ -122,12 +153,23 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
                 if newPost != []:
     
                     # process the tuple
+                    #example of a[1].text -> 
+                    #"3.7\nData Scientist, Analytics\nEtsy – Brooklyn, NY\n$114k-$167k  (Glassdoor Est.)\nWe're Hiring"
+                    #tuple structure ('job_id',['rating','position','company','salary'])
                     #jobData = list(map(lambda a: (a[0],a[1].text.encode("utf8")./
                         #split('\n')[0:4]),newPost))
-                    jobData = list(map(lambda a: (a[0],a[1].text.split('\n')[0:4]),newPost))
-                    # Update job dictionary   
-                    tmp = dict((a[0],a[1]) for a in jobData)
-                    jobDict.update(tmp)
+                    #jobData = list(map(lambda a: (a[0],a[1].text.split('\n')[0:4]),newPost))
+                    #jobData = list(map(do_stuff, newPost)) ####&&&&
+                    # do_stuff returns many misplaced entries. 
+                    #do_new_stuff uses regex to minimize bad data, it also splits up entries into more columns
+                    # new tuple structure ('job_id',[rating, position, company, job_city, job_state_code, sal_low, sal_high])
+                    jobData = list(map(do_new_stuff, newPost))
+
+
+                    # Update job dictionary; 
+                    # Convert tuple to dictionary. structure ('job_id',['rating',...]) -> {'job_id':['rating',...]}
+                    tmp = dict((a[0],a[1]) for a in jobData) 
+                    jobDict.update(tmp) #add a new entry with unique key job_id
                     # finally find the links: 
                     link_lst = list(map(lambda c: (c[0],c[1].find_element_by_tag_name('a').\
                         get_attribute('href')), newPost))
@@ -137,9 +179,10 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
                     link += link_lst
 
                 
-                browser.find_element_by_class_name('next').click()
+                browser.find_element_by_class_name('next').click() #next page
                 try:
-                    browser.find_element_by_class_name('xBtn').click()
+                    #browser.find_element_by_class_name('xBtn').click() #pop-up
+                    browser.find_element_by_xpath('//*[@id="JAModal"]/div/div[2]/div').click() #pop up
                 except:
                     pass
                     
@@ -205,4 +248,49 @@ def text_cleaner(text):
     
     
 ##############################################################################
+def string_from_text(pattern, tmp_txt):
+    lst  = tmp_txt.split('\n')
+    return [''.join(x.split()[1:]) for x in lst if x.find(pattern) !=-1][0]
+
+##############################################################################
+
+def do_stuff(a):
+    return (a[0],a[1].text.split('\n')[0:4])
+
+##############################################################################
+
+def do_new_stuff(a):
+    tmp = a[1].text
+    raw_rating = re.findall('\d\.\d',tmp )
+    if len(raw_rating)==1: 
+        rating =raw_rating[0]
+    else:
+        rating = ''
+    raw_sal_range = re.findall('\d+k',tmp )
+    if len(raw_sal_range)==2:
+        sal_low = int(raw_sal_range[0].replace('k',''))
+        sal_high = int(raw_sal_range[1].replace('k',''))
+    else:
+        sal_low = np.nan
+        sal_high = np.nan
+    raw_company = re.findall('.+–.+,.+',tmp)
+    if len(raw_company)==1:
+        tt = raw_company[0].split('–')
+        company = tt[0].strip()
+        job_city = tt[1].split(',')[0].strip()
+        job_state_code = tt[1].split(',')[1].strip()
+    else:
+        company = ''
+        job_city = ''
+        job_state_code = ''
+    raw_position = re.findall('(.+sci.+|.+ana.+|.+eng.+)',tmp.lower())
+    if len(raw_position)==1:
+        position = raw_position[0]
+    else:
+        position = tmp.split('\n')[1].lower()
+    #return (a[0],tmp[0:4])
+    return (a[0],[rating, position, company, job_city, job_state_code, sal_low, sal_high])
+
+##############################################################################
+
     

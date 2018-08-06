@@ -8,11 +8,13 @@ from selenium.webdriver.common import action_chains, keys
 from selenium.common.exceptions import NoSuchElementException
 import numpy as np
 import sys
+import re
 
 
 # call the helper
 
-from helperP3 import load_obj, save_obj, init_driver, searchJobs, text_cleaner, get_pause
+from helperP3 import load_obj, save_obj, init_driver, searchJobs, text_cleaner, get_pause, \
+string_from_text
 	
 # 1- Load existing dictionary. Check for initial dictionary. 
 # If empty initialize
@@ -34,8 +36,8 @@ print('len(jobDict) = '+str(len(jobDict))+ ', len(link) = '+str(len(link)))
 #    get_data => Scraping for detailed data.
 
 
-#get_link = True
-get_link = False
+get_link = True ####&&&&
+#get_link = False
 
 
 get_data = (not get_link) # either get_link or get_data
@@ -60,16 +62,19 @@ if get_link:
 
 	# Initialize cities and jobs
 
-	jobName_lst = ['Data Scientist', 'Data Analyst']
-	jobName = np.random.choice(jobName_lst)
+	#jobName_lst = ['Data Scientist', 'Data Analyst','Data Engineer']
+	#jobName = np.random.choice(jobName_lst)
+	jobName = 'Data Scientist' ####&&&&
 
-	city_lst = ['San Jose','New York','San Francisco','Detroit','Washington','Austin','Boston','Seattle','Chicago','Los Angeles',' ']
-	city = np.random.choice(city_lst)    
+	#city_lst = ['San Jose','New York','San Francisco','Detroit','Washington','Austin','Boston','Seattle','Chicago','Los Angeles',' ']
+	#city = np.random.choice(city_lst)  
+	city = 'New York'  ####&&&&
 
 	print('jobName = '+jobName+ ', city = '+city)    
 		
 	# search for jobs (short description) 
 	try:    
+		# jobDict structure {'job_id':['rating','position','company','salary']}
 		update_jobDict, update_link = searchJobs(browser, jobName, city, jobDict, link)
 		sleep(get_pause())
 	except Exception as e:
@@ -90,8 +95,8 @@ if get_link:
 if get_data:        
 	
 	print('len(link) = '+str(len(link)))
-	while len(link) > 300: # originally 0, a hard coded solution for when only bad links are left.
-	#for i in range(50): # debugging	
+	while len(link) > 50: # originally 0, a hard coded solution for when only bad links are left.
+	#for i in range(10): # debugging	
 		 
 		try:
 			rnd_job = np.random.choice(range(len(link)))
@@ -112,15 +117,50 @@ if get_data:
 			#description = desc_list
 			#print('description '+ str(type(description)))
 			
-			# Update dictionary and remove links already used
-			jobDict[ids].append(description)               
-			dummy=link.pop(rnd_job) 
+			# jobDict structure {'job_id':['rating','position','company','salary','descr']}
+			jobDict[ids].append(description)    
 			
-			#Additional information about company
-			#sleep(2)
-			#browser.find_element_by_xpath('//*[@id="JobContent"]/div[5]/header/ul/li[2]/span').click()
-			#industry = browser.find_element_by_xpath('//*[@id="EmpBasicInfo"]/div[1]/div[1]/div[6]/span').text
-			#jobDict[ids].append(industry)
+			
+			#Additional information about company (size, revenue, industry)
+			sleep(2)
+			try:
+				browser.find_element_by_xpath('//*[@id="JobContent"]//header/ul/li[2]/span').click()
+				tmp_txt = browser.find_element_by_id('EmpBasicInfo').text
+					
+				hq_city = string_from_text('Headquarters', tmp_txt).split(',')[0]
+				#print('hq_city = ',hq_city)
+				jobDict[ids].append(hq_city)
+				#print(' 1 = ',)
+				hq_state_code = string_from_text('Headquarters', tmp_txt).split(',')[1]
+				#print('hq_state_code = ',hq_state_code)
+				jobDict[ids].append(hq_state_code)
+				#print(' 2 = ',)
+				#size_low = int(re.findall('\d+',string_from_text('Size',tmp_txt))[0])
+				size = re.findall('\d+',string_from_text('Size',tmp_txt))
+				#print('size = ', size)
+				#size_high = int(re.findall('\d+',string_from_text('Size',tmp_txt))[1])
+				#print(' = ',)
+				jobDict[ids].append(size)
+				#print(' 3 = ',)
+				#jobDict[ids].append(size_low)
+				#jobDict[ids].append(size_high)
+				industry = string_from_text('Industry',tmp_txt)
+				#print('industry = ',industry)
+
+				jobDict[ids].append(industry)
+				#print(' 4 = ',)
+				#jobDict[ids].append(revenue)
+
+				#size = browser.find_element_by_xpath('//*[@id="EmpBasicInfo"]//[@class=div[1]/div[1]/div[3]/span').text
+				#size = browser.find_element_by_xpath('//*[@id="EmpBasicInfo"]/div[1]/div[1]/div[3]/span').text
+				#industry = browser.find_element_by_xpath('//*[@id="EmpBasicInfo"]/div[1]/div[1]/div[6]/span').text
+				#revenue = browser.find_element_by_xpath('//*[@id="EmpBasicInfo"]/div[1]/div[1]/div[7]/span').text
+			except Exception as e:
+				print(type(e),e)
+
+			#remove links already used
+			           
+			dummy=link.pop(rnd_job) 
 
 			# if everything is fine, save
 			#print("Going to save data!!")

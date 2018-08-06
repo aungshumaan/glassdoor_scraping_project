@@ -1,3 +1,6 @@
 *.csv
 *.pkl
 __pycache__/
+bla.py
+glassdoorScrape.py
+.ipynb_checkpoints/
