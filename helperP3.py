@@ -18,6 +18,7 @@ import numpy as np
 import pickle
 import re
 import csv
+import os.path
 #from collections import OrderedDict
 
 def init_driver():
@@ -57,6 +58,9 @@ def get_pause():
 def get_csv(pickle_obj):  ####&&&&
     my_dict = load_obj(pickle_obj)
     csv_filename = 'mycsvfile.csv'
+    if os.path.isfile(csv_filename):
+        print('File already exists! Please rename it.')
+        return
     with open(csv_filename, 'w') as f:  # Just use 'w' mode in 3.x
         writer = csv.writer(f)
 
@@ -77,12 +81,14 @@ def get_csv(pickle_obj):  ####&&&&
 def get_csv2(pickle_obj): ####&&&&
     my_dict = load_obj(pickle_obj)
     csv_filename = 'mycsvfile2.csv'
+    if os.path.isfile(csv_filename):
+        print('File already exists! Please rename it.')
+        return
     with open(csv_filename, 'w') as f:  # Just use 'w' mode in 3.x
         writer = csv.writer(f)
         fieldnames = ['job_id','rating','position','company_name','salary','link',\
         'description','hq_city','hq_state_code','size','industry']
-        #writer = csv.DictWriter(f, fieldnames=fieldnames)
-        #writer.writeheader()
+
         for k,v in my_dict.items():
             if len(v) == 10:
                 new_dict = {}
@@ -97,6 +103,41 @@ def get_csv2(pickle_obj): ####&&&&
                 new_dict['hq_state_code'] = v[7]
                 new_dict['size'] = v[8]
                 new_dict['industry'] = v[9]
+                
+                #writer.writerow(new_dict.values())
+                writer.writerow([new_dict[i] for i in fieldnames]) #order preserved
+
+##############################################################################
+
+def get_csv3(pickle_obj): ####&&&&
+    my_dict = load_obj(pickle_obj)
+    csv_filename = 'mycsvfile3.csv'
+    if os.path.isfile(csv_filename):
+        print('File already exists! Please rename it.')
+        return
+
+    with open(csv_filename, 'w') as f:  # Just use 'w' mode in 3.x
+        writer = csv.writer(f)
+        fieldnames = ['job_id','rating', 'position', 'company', 'job_city', 'job_state_code',\
+         'sal_low', 'sal_high', 'link','description','hq_city','hq_state_code','size','industry']
+
+        for k,v in my_dict.items():
+            if len(v) == 13:
+                new_dict = {}
+                new_dict['job_id'] = k
+                new_dict['rating'] = v[0] 
+                new_dict['position'] = v[1]
+                new_dict['company'] = v[2]
+                new_dict['job_city'] = v[3]
+                new_dict['job_state_code'] = v[4]
+                new_dict['sal_low'] = v[5]
+                new_dict['sal_high'] = v[6]
+                new_dict['link'] = v[7]
+                new_dict['description'] = v[8]
+                new_dict['hq_city'] = v[9]
+                new_dict['hq_state_code'] = v[10]
+                new_dict['size'] = v[11]
+                new_dict['industry'] = v[12]
                 
                 #writer.writerow(new_dict.values())
                 writer.writerow([new_dict[i] for i in fieldnames]) #order preserved
@@ -135,7 +176,7 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
         # Find brief description
         
         
-        for i in range(2): #25
+        for i in range(20): #20  ####&&&&
             try:
                 # Extract useful classes
                 jobPosting =browser.find_elements_by_class_name('jl')
@@ -163,17 +204,21 @@ def searchJobs(browser, jobName, city=None, jobDict = None, link=None):
                     # do_stuff returns many misplaced entries. 
                     #do_new_stuff uses regex to minimize bad data, it also splits up entries into more columns
                     # new tuple structure ('job_id',[rating, position, company, job_city, job_state_code, sal_low, sal_high])
+                    print('starting do_new_stuff')
                     jobData = list(map(do_new_stuff, newPost))
-
+                    print("I'm out of do_new_stuff.")
 
                     # Update job dictionary; 
                     # Convert tuple to dictionary. structure ('job_id',['rating',...]) -> {'job_id':['rating',...]}
+                    print('updating jobDict')
                     tmp = dict((a[0],a[1]) for a in jobData) 
+                    print('tmp created')
                     jobDict.update(tmp) #add a new entry with unique key job_id
                     # finally find the links: 
                     link_lst = list(map(lambda c: (c[0],c[1].find_element_by_tag_name('a').\
                         get_attribute('href')), newPost))
                     #add the link to job dict
+                    print('Adding to link')
                     tmp = [jobDict[c[0]].append(c[1]) for c in link_lst]
                     # update link list. This will be used in get_data part.
                     link += link_lst
@@ -200,7 +245,7 @@ def text_cleaner(text):
     Inputs: a URL to investigate
     Outputs: Cleaned text only
     '''
-    #print('starting text_cleaner')
+    print('starting text_cleaner')
     stopws = set(stopwords.words("english"))
     #print('initialized stopws')
     
@@ -260,13 +305,19 @@ def do_stuff(a):
 ##############################################################################
 
 def do_new_stuff(a):
+    print("I'm in do_new_stuff")
+    if len(a) ==0:
+        print('object is empty')
+        
     tmp = a[1].text
     raw_rating = re.findall('\d\.\d',tmp )
+    print('raw_rating = ',raw_rating)
     if len(raw_rating)==1: 
         rating =raw_rating[0]
     else:
         rating = ''
     raw_sal_range = re.findall('\d+k',tmp )
+    print('raw_sal_range = ',raw_sal_range)
     if len(raw_sal_range)==2:
         sal_low = int(raw_sal_range[0].replace('k',''))
         sal_high = int(raw_sal_range[1].replace('k',''))
@@ -274,6 +325,7 @@ def do_new_stuff(a):
         sal_low = np.nan
         sal_high = np.nan
     raw_company = re.findall('.+–.+,.+',tmp)
+    print('raw_company = ',raw_company)
     if len(raw_company)==1:
         tt = raw_company[0].split('–')
         company = tt[0].strip()
@@ -284,11 +336,13 @@ def do_new_stuff(a):
         job_city = ''
         job_state_code = ''
     raw_position = re.findall('(.+sci.+|.+ana.+|.+eng.+)',tmp.lower())
+    print('raw_position = ',raw_position)
     if len(raw_position)==1:
         position = raw_position[0]
     else:
         position = tmp.split('\n')[1].lower()
     #return (a[0],tmp[0:4])
+    print('Will go out of do_new_stuff.')
     return (a[0],[rating, position, company, job_city, job_state_code, sal_low, sal_high])
 
 ##############################################################################

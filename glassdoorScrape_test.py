@@ -36,8 +36,8 @@ print('len(jobDict) = '+str(len(jobDict))+ ', len(link) = '+str(len(link)))
 #    get_data => Scraping for detailed data.
 
 
-get_link = True ####&&&&
-#get_link = False
+#get_link = True ####&&&&
+get_link = False
 
 
 get_data = (not get_link) # either get_link or get_data
@@ -62,13 +62,13 @@ if get_link:
 
 	# Initialize cities and jobs
 
-	#jobName_lst = ['Data Scientist', 'Data Analyst','Data Engineer']
+	jobName_lst = ['Data Scientist', 'Data Analyst','Data Engineer']
 	#jobName = np.random.choice(jobName_lst)
 	jobName = 'Data Scientist' ####&&&&
 
-	#city_lst = ['San Jose','New York','San Francisco','Detroit','Washington','Austin','Boston','Seattle','Chicago','Los Angeles',' ']
-	#city = np.random.choice(city_lst)  
-	city = 'New York'  ####&&&&
+	city_lst = ['San Jose','New York','San Francisco','Detroit','Washington','Austin','Boston','Seattle','Chicago','Los Angeles',' ']
+	city = np.random.choice(city_lst)  
+	city = ' '  ####&&&&
 
 	print('jobName = '+jobName+ ', city = '+city)    
 		
@@ -95,8 +95,8 @@ if get_link:
 if get_data:        
 	
 	print('len(link) = '+str(len(link)))
-	while len(link) > 50: # originally 0, a hard coded solution for when only bad links are left.
-	#for i in range(10): # debugging	
+	while len(link) > 100: # originally 0, a hard coded solution for when only bad links are left.
+	#for i in range(250): # debugging	####&&&&
 		 
 		try:
 			rnd_job = np.random.choice(range(len(link)))
