@@ -73,7 +73,7 @@ def get_csv(pickle_obj):  ####&&&&
                 new_dict['company_name'] = v[2]
                 new_dict['salary'] = v[3]
                 new_dict['link'] = v[4]
-                new_dict['description'] = v[5]
+                new_dict['description'] = v[5]  #[x.decode('ascii') for x in v[5]]
                 writer.writerow(new_dict.values())
     
 
@@ -98,7 +98,7 @@ def get_csv2(pickle_obj): ####&&&&
                 new_dict['company_name'] = v[2]
                 new_dict['salary'] = v[3]
                 new_dict['link'] = v[4]
-                new_dict['description'] = v[5]
+                new_dict['description'] = v[5]  #[x.decode('ascii') for x in v[5]]
                 new_dict['hq_city'] = v[6]
                 new_dict['hq_state_code'] = v[7]
                 new_dict['size'] = v[8]
@@ -133,7 +133,8 @@ def get_csv3(pickle_obj): ####&&&&
                 new_dict['sal_low'] = v[5]
                 new_dict['sal_high'] = v[6]
                 new_dict['link'] = v[7]
-                new_dict['description'] = v[8]
+                new_dict['description'] = [x.decode('ascii') for x in v[8]]
+                #print(type(v[8]))
                 new_dict['hq_city'] = v[9]
                 new_dict['hq_state_code'] = v[10]
                 new_dict['size'] = v[11]

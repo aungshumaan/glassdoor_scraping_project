@@ -95,7 +95,7 @@ if get_link:
 if get_data:        
 	
 	print('len(link) = '+str(len(link)))
-	while len(link) > 100: # originally 0, a hard coded solution for when only bad links are left.
+	while len(link) > 0: # originally 0, a hard coded solution for when only bad links are left.
 	#for i in range(250): # debugging	####&&&&
 		 
 		try:
